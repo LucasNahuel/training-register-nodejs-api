@@ -32,6 +32,8 @@ let trainingLogCollection;
 
 let setLogCollection;
 
+let trainingRatingCollection;
+
 
 const uri =
   `mongodb+srv://${username}:${password}@${clusterUrl}/?authMechanism=${authMechanism}`;
@@ -51,6 +53,7 @@ client.connect( (err, client) =>{
   exerciseSetCollection = db.collection('exerciseSet');
   trainingLogCollection = db.collection('trainingLog');
   setLogCollection = db.collection('setLog');
+  trainingRatingCollection = db.collection('trainingRating');
 });
 
 
@@ -267,12 +270,12 @@ app.get("/getTraining", authenticateJWT, (req, res) => {
 
           console.log("exerciseDayCursor has next");
 
-          let actualExerciseDay = await exerciseDayCursor.next().then(res => {return res });
+          let actualExerciseDay = await exerciseDayCursor.next();
 
 
           exerciseSetCursor = await exerciseSetCollection.find({ exerciseDayFk: actualExerciseDay._id });
 
-          while( await exerciseSetCursor.hasNext().then(res => { return res }) == true){
+          while( await exerciseSetCursor.hasNext() == true){
 
             
             let actualSet = await exerciseSetCursor.next().then(res => { return res });
@@ -647,6 +650,327 @@ app.post("/saveSet", authenticateJWT, (req, res) => {
 });
 
 
+
+//get training by id
+
+app.get("/getTrainingsById", authenticateJWT, (req, res) => {
+
+  async function getTrainingById(){
+
+    const trainingId = req.query.id;
+
+    console.log(trainingId);
+
+
+    let trainingFound = await trainingCollection.findOne({ _id : new ObjectId(trainingId) });
+
+    class trainingLogResponse {
+
+      trainingName
+      creatorName
+      exercises
+
+    }
+
+    class exerciseLogResponse { 
+
+      exerciseName
+      sets
+
+    }
+
+    class setResponse {
+      dayName
+      reps
+      weight
+      setId
+    }
+
+    tlr = new trainingLogResponse();
+    tlr.trainingName = trainingFound.name;
+    tlr.creatorName = await userCollection.findOne({ _id : trainingFound.creatorFK}).then(res => {return res.User});
+    tlr.exercises = new Array();
+
+    //find all exercises of the training
+
+    exercisesCursor = await exerciseCollection.find({ trainingFk : trainingFound._id });
+
+    while(await exercisesCursor.hasNext() == true){
+
+      exerciseFound = await exercisesCursor.next();
+
+      elr = new exerciseLogResponse();
+      elr.exerciseName = exerciseFound.name;
+      elr.sets = new Array();
+
+      //find the exercise-day documents containing the found exercise
+
+      exerciseDayCursor = await exerciseDayCollection.find({ exerciseFk : exerciseFound._id });
+
+      while(await exerciseDayCursor.hasNext() == true ){
+
+        exerciseDayFound = await exerciseDayCursor.next();
+
+        //find sets that are related to the exerciseDay record
+
+        exerciseSetCursor = await exerciseSetCollection.find({ exerciseDayFk : exerciseDayFound._id });
+      
+        while(await exerciseSetCursor.hasNext() == true){
+
+          exerciseSetFound = await exerciseSetCursor.next();
+
+          set = new setResponse();
+          set.reps = exerciseSetFound.repetitions;
+          set.weight = exerciseSetFound.weight;
+          set.dayName = await trainingDayCollection.findOne({ _id : exerciseDayFound.trainingDayFk }).then(res => { return res.day });
+
+          elr.sets.push(set);
+
+        }
+
+      }
+
+      tlr.exercises.push(elr);
+
+    }
+
+    res.status(200).json(tlr);
+
+  };
+
+
+  getTrainingById().catch(err => {
+    console.log("cant get training by id: "+ err);
+    res.status(500).send("{\"message\":\"Something went wrong\"}");
+  });
+
+});
+
+
+//create the rating training method
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+app.get("/getTrainingsByName", authenticateJWT,  (req, res) =>{
+
+
+
+  async function getTrainingByName(){
+
+    const name = req.query.name;
+
+    const page = req.query.page;
+
+    console.log(name);
+  
+    console.log(page);
+
+
+    class trainingLogResponse {
+
+      id
+      name
+      creatorFK
+      exercises
+      rating
+      noOfRatings
+
+    }
+  
+    var trainingResponseArray = new Array();
+
+
+
+  
+    trainingCursor = trainingCollection.find({ name : new RegExp('.*' + name + '.*') }).skip(20 * page).limit(20);
+  
+    while(await trainingCursor.hasNext() == true){
+
+      var actualTraining = await trainingCursor.next();
+
+      tlr = new trainingLogResponse();
+      tlr.id = actualTraining._id;
+      tlr.name = actualTraining.name;
+      tlr.creatorFK = actualTraining.creatorFK;
+
+
+      //rating calculation yet to be implemented
+      tlr.rating = 0;
+      tlr.noOfRatings = 0;
+
+      
+
+
+      trainingResponseArray.push(tlr);
+    }
+  
+    res.status(200).json(trainingResponseArray);
+  
+
+
+    
+  };
+
+  getTrainingByName().catch( err => {
+    console.log("cant get training by name : "+ err);
+    res.status(500).send("{\"message\":\"Something went wrong\"}");
+  })
+
+  
+
+
+
+
+
+});
+
+
+
+
+app.post("/rateTraining", authenticateJWT, (req, res) => {
+
+  async function rateTraining(){
+
+
+    const { trainingFK, userName, rate, comment} = req.body;
+
+   
+
+    class trainingRating{
+      
+      userFK
+      trainingFK
+      rating
+      comment
+
+    };
+
+
+    userFound = await userCollection.findOne({ User : userName });
+
+
+
+    var rateTrainingFound = await trainingRatingCollection.findOne({ trainingFK : new ObjectId(trainingFK), userFK : userFound._id });
+
+    console.log(rateTrainingFound._id);
+    
+
+    if(rateTrainingFound == null){
+
+      newRating = new trainingRating();
+      newRating.userFK = userFound._id;
+      newRating.trainingFK = new ObjectId(trainingFK);
+      newRating.rating = rate;
+      newRating.comment = comment;
+
+      await trainingRatingCollection.insertOne(newRating);
+    }else{
+      
+      await trainingRatingCollection.updateOne({ _id : rateTrainingFound._id }, { $set: { userFK : userFound._id, trainingFK : new ObjectId(trainingFK), rating : rate.toString(), comment : comment} } );
+    }
+
+    res.status(200).json({ message : 'correctly saved'});
+
+  }
+
+  rateTraining().catch(err => {
+    console.log("cant rate training : "+err);
+    res.status(500).json({ message : 'something went wrong '});
+  });
+
+
+
+});
+
+app.get("/getRatingByUserAndTraining", authenticateJWT, (req, res) => {
+
+  async function getRatingByUserAndTraining(){
+
+    const { userName, trainingFK } = req.query;
+
+    console.log(trainingFK);
+
+    userFound = await userCollection.findOne({ User : userName });
+
+    trainingRatingFound = await trainingRatingCollection.findOne({ userFK : userFound._id, trainingFK :  new ObjectId(trainingFK) });
+
+    res.status(200).json(trainingRatingFound);
+
+  }
+
+
+  getRatingByUserAndTraining().catch(err => {
+    console.log("cant get rating by user and training: "+err);
+    res.status(500).json({ message : 'something went wrong'});
+  });
+
+});
+
+
+app.get("/getRatingsPage", authenticateJWT, (req, res) => {
+
+
+  async function getRatingPage(){
+
+    const { trainingFK, pageNo } = req.query;
+
+    console.log(trainingFK);
+
+    trainingRatingList = new Array();
+
+    trainingRatingCursor = await trainingRatingCollection.find({ trainingFK: new ObjectId(trainingFK) }).skip(20 * pageNo).limit(20);
+
+
+    class trainingRatingResponse{
+      id
+      userFK
+      trainingFK
+      rating
+      comment
+    }
+
+    while(await trainingRatingCursor.hasNext() == true){
+
+
+      trainingRatingFound = await trainingRatingCursor.next();
+
+      trr = new trainingRatingResponse();
+      trr.id = trainingRatingFound._id;
+      trr.userFK = await userCollection.findOne({ _id : trainingRatingFound.userFK });
+      trr.trainingFK = trainingRatingFound.trainingFK;
+      trr.rating = trainingRatingFound.rating;
+      trr.comment = trainingRatingFound.comment;
+
+      trainingRatingList.push(trr);
+
+    }
+
+    res.status(200).json(trainingRatingList);
+
+  }
+
+  getRatingPage().catch(err => {
+    console.log("can't get the ratings : "+err);
+    res.status(500).json({ message : 'something went wrong'});
+  });
+
+
+
+});
 
 
 
