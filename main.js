@@ -84,8 +84,6 @@ app.post('/login', (req, resPost) => {
 
   const { user, password } = req.body;
 
-  console.log("name :"+user);
-  console.log("pass :"+ password);
 
   userCollection.findOne({ User: user }).then(
 
@@ -188,8 +186,6 @@ app.get("/getTraining", authenticateJWT, (req, res) => {
     const userId = await userCollection.findOne({ User: user }).then(res => { return res});
 
 
-    console.log("userid "+ userId._id);
-
 
 
 
@@ -253,7 +249,6 @@ app.get("/getTraining", authenticateJWT, (req, res) => {
 
         actualExercise = await exercisesOfTrainingCursor.next().then(res => { return res });
 
-        console.log(actualExercise.name);
 
         let elr = new exerciseResponse();
 
@@ -291,7 +286,6 @@ app.get("/getTraining", authenticateJWT, (req, res) => {
 
             while ( await trainLogCursor.hasNext()   == true){
 
-              console.log("traininglogcursor has next");
               
 
               let actualTrainLog = await  trainLogCursor.next();
@@ -299,7 +293,6 @@ app.get("/getTraining", authenticateJWT, (req, res) => {
 
               if (Number.parseInt(actualTrainLog.date.split("-")[0]) == date.getDate() && Number.parseInt(actualTrainLog.date.split("-")[1]) == date.getMonth()+1 && Number.parseInt(actualTrainLog.date.split("-")[2]) == date.getFullYear() ){
 
-                console.log("this line executes");
 
                 matchingDayTrainLog.push(actualTrainLog);
 
@@ -312,15 +305,12 @@ app.get("/getTraining", authenticateJWT, (req, res) => {
 
               let mtl = matchingDayTrainLog[0];
 
-              console.log("matching training log id : "+mtl._id);
-              console.log("actual set id : "+ actualSet._id);
 
 
               let setLogCursor = await setLogCollection.find({ trainingLogFK : mtl._id, setFK : actualSet._id });
 
               if(await setLogCursor.hasNext() == true){
 
-                console.log("set log cursor has next");
 
                 matchingSetLog = await setLogCursor.next();
 
@@ -385,7 +375,6 @@ app.post("/createTraining", authenticateJWT, (req, resPost) =>{
 
   let user = null;
 
-  console.log(JSONexerciceList);
 
 
   await userCollection.findOne({ User : userCreatorName }).then(res =>{
@@ -422,7 +411,6 @@ app.post("/createTraining", authenticateJWT, (req, resPost) =>{
 
   await trainingCollection.insertOne(t).then(res =>{
 
-    console.log(res.insertedId);
 
     insertedTrainingId = res.insertedId;
 
@@ -808,9 +796,37 @@ app.get("/getTrainingsByName", authenticateJWT,  (req, res) =>{
       tlr.creatorFK = actualTraining.creatorFK;
 
 
-      //rating calculation yet to be implemented
-      tlr.rating = 0;
-      tlr.noOfRatings = 0;
+      //rating calculation with aggregation functions
+
+
+      avgRatingCalculatedCursor = await trainingRatingCollection.aggregate(
+        [
+          {
+            $match: { trainingFK: actualTraining._id }
+          },
+          {
+            $group:
+              {
+                _id: "$trainingFK",
+                avgRating: { $avg: "$rating" },
+                noOfRatings: { $count : {}}
+              }
+          }
+        ]
+      );
+
+      avgRatingCalculated = null;
+
+      
+      if(await avgRatingCalculatedCursor.hasNext() == true){
+        console.log("avg rating cursor has next");
+        avgRatingCalculated = await avgRatingCalculatedCursor.next();
+        tlr.rating = avgRatingCalculated.avgRating;
+        tlr.noOfRatings = avgRatingCalculated.noOfRatings;
+      }
+
+
+      
 
       
 
@@ -866,15 +882,12 @@ app.post("/rateTraining", authenticateJWT, (req, res) => {
 
     var rateTrainingFound = await trainingRatingCollection.findOne({ trainingFK : new ObjectId(trainingFK), userFK : userFound._id });
 
-    console.log(rateTrainingFound._id);
-    
-
     if(rateTrainingFound == null){
 
       newRating = new trainingRating();
       newRating.userFK = userFound._id;
       newRating.trainingFK = new ObjectId(trainingFK);
-      newRating.rating = rate;
+      newRating.rating = Number.parseInt(rate);
       newRating.comment = comment;
 
       await trainingRatingCollection.insertOne(newRating);
@@ -973,6 +986,119 @@ app.get("/getRatingsPage", authenticateJWT, (req, res) => {
 });
 
 
+
+
+
+
+app.get("/isUsernameTaken", authenticateJWT, (req, res) => {
+
+
+  async function isUserNameTaken(){
+
+    const { userName, id} = req.query;
+
+    isTaken = null;
+
+    userFound = await userCollection.findOne({ User : userName });
+
+    if(userFound && userFound._id == id){
+      res.status(200).send(true);
+    }else{
+      res.status(200).send(null);
+    }
+
+  }
+
+  isUserNameTaken().catch(err => {
+    console.log("cant get usernameTaken: "+err);
+    res.status(500).json({message : "something went wrong"});
+  });
+});
+
+
+
+
+
+
+
+app.post("/updateUser", authenticateJWT, (req, res) => {
+
+  async function updateUser(){
+
+  //implement update user method
+
+  const { id, userName, password, email } = req.body;
+
+  updatingResult  = await userCollection.updateOne({ _id : new ObjectId(id) }, { $set : { User : userName, password : password, Email : email }});
+
+  if(updatingResult.modifiedCount > 0){
+    res.status(200).json({message: 'Correctly updated'});
+  }else{
+    res.status(500).json({message : 'something went wrong'});
+  }
+
+
+  }
+
+
+  updateUser().catch(err => {
+    console.log("cant update user : "+err);
+    res.status(500).json({ message : "something went wrong"});
+  });
+});
+
+
+
+
+app.post("/setTrainingActive", authenticateJWT, (req, res) => {
+
+  async function setTrainingActive(){
+
+
+    const { id , user } = req.body;
+
+    console.log(id);
+
+    userFound = await userCollection.findOne({ User : user});
+
+    trainingFound = await trainingCollection.findOne({ _id : new ObjectId(id)});
+
+    userTrainingsFound = await trainingOfUserCollection.findOne({ user : userFound._id , training : trainingFound._id });
+
+    if(userTrainingsFound == null){
+
+      class trainingOfUser{
+
+        user
+        training
+        isActive
+    
+      }
+
+      newTrainingOfUser = new trainingOfUser;
+      newTrainingOfUser.user = userFound._id;
+      newTrainingOfUser.training = trainingFound._id;
+      newTrainingOfUser.isActive = "true";
+
+      await trainingOfUserCollection.insertOne(newTrainingOfUser);
+
+      res.status(200).json({ message : 'correctly saved'});
+    }else if(userTrainingsFound.isActive == "false"){
+      await trainingOfUserCollection.updateOne({user : userFound._id , training : trainingFound._id }, { $set : { isActive : "true" }});
+
+      res.status(200).json({ message: 'correctly saved'});
+    }else{
+      res.status(401).json({ message : 'training is already active'});
+    }
+
+  }
+
+  setTrainingActive().catch(err => {
+    console.log("error setting training active"+err);
+    res.status(500).json({ message : 'something went wrong'});
+  })
+
+})
 
 
 
