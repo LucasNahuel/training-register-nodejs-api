@@ -290,9 +290,12 @@ app.get("/getTraining", authenticateJWT, (req, res) => {
 
               let actualTrainLog = await  trainLogCursor.next();
 
+              console.log({actualTrainLog});
 
-              if (Number.parseInt(actualTrainLog.date.split("-")[0]) == date.getDate() && Number.parseInt(actualTrainLog.date.split("-")[1]) == date.getMonth()+1 && Number.parseInt(actualTrainLog.date.split("-")[2]) == date.getFullYear() ){
+              console.log({date});
 
+
+              if (actualTrainLog.date.toString() == date.toString()){
 
                 matchingDayTrainLog.push(actualTrainLog);
 
@@ -565,6 +568,8 @@ app.post("/saveSet", authenticateJWT, (req, res) => {
 
     //check if theres already a trainlog for the given day, if not, create it
 
+    dateObj = new Date(Number.parseInt(date.split("-")[2]),  Number.parseInt(date.split("-")[1])-1, Number.parseInt(date.split("-")[0]));
+
     var trainLogFound = await trainingLogCollection.findOne({ userFK : userFound._id , date : date });
 
     if(trainLogFound === null){
@@ -582,11 +587,12 @@ app.post("/saveSet", authenticateJWT, (req, res) => {
       newTrainingLog = new trainingLog();
 
       newTrainingLog.userFK = userFound._id;
-      newTrainingLog.date = date;
+
+      newTrainingLog.date = dateObj;
 
       await trainingLogCollection.insertOne(newTrainingLog);
 
-      trainLogFound = await trainingLogCollection.findOne({ userFK : userFound._id , date : date });
+      trainLogFound = await trainingLogCollection.findOne({ userFK : userFound._id , date : dateObj });
 
     }
 
@@ -1096,10 +1102,163 @@ app.post("/setTrainingActive", authenticateJWT, (req, res) => {
   setTrainingActive().catch(err => {
     console.log("error setting training active"+err);
     res.status(500).json({ message : 'something went wrong'});
-  })
+  });
 
-})
+});
 
+
+
+
+
+
+
+
+
+
+
+
+
+app.get("/getTrainingAndExercices", authenticateJWT, (req, res) => {
+
+  async function getTrainingAndExercises(){
+
+    const user = req.query.user;
+
+
+    userFound = await userCollection.findOne({ User : user });
+
+
+    class trainingLogResponse {
+
+      id
+      trainingName
+      creatorName
+      exercises
+
+    }
+
+    class exerciseLogResponse { 
+
+      id
+      exerciseName
+      sets
+
+    }
+
+    trainingLogResponseList = new Array();
+
+    trainingOfUserCursor = await trainingOfUserCollection.find({ user : userFound._id, isActive : "true"});
+
+    while(await trainingOfUserCursor.hasNext() == true){
+      trainingOfUserFound = await  trainingOfUserCursor.next();
+
+      tlr = new trainingLogResponse();
+      tlr.id = trainingOfUserFound.training;
+      tlr.trainingName = await trainingCollection.findOne({ _id : trainingOfUserFound.training }).then(res => {return res.name});
+      tlr.exercises = new Array();
+
+      exerciseFoundCursor = await exerciseCollection.find({ trainingFk : trainingOfUserFound.training });
+
+      
+      while(await exerciseFoundCursor.hasNext() == true){
+
+        exerciseFound = await exerciseFoundCursor.next();
+
+        exerciseResponse = new exerciseLogResponse();
+
+        exerciseResponse.id = exerciseFound._id;
+        exerciseResponse.exerciseName = exerciseFound.name;
+
+        tlr.exercises.push(exerciseResponse);
+
+
+      }
+
+      trainingLogResponseList.push(tlr);
+    }
+
+
+    res.status(200).json(trainingLogResponseList);
+  }
+
+
+  getTrainingAndExercises().catch(err => {
+    console.log("cant get trainigs and exercises : "+err );
+    res.status(500).json({message : "something went wrong"});
+  });
+
+});
+
+
+
+app.get("/getAnalytics", authenticateJWT, (req, res) => {
+
+  async function getAnalytics(){
+
+    const { user, exerciseId, dateBegin, dateEnd } = req.query;
+
+    userFound = await userCollection.findOne({ User: user});
+
+    dateBeginObj = new Date(Number.parseInt(dateBegin.split("-")[2]),  Number.parseInt(dateBegin.split("-")[1])-1, Number.parseInt(dateBegin.split("-")[0]));
+
+    dateEndObj = new Date(Number.parseInt(dateEnd.split("-")[2]),  Number.parseInt(dateEnd.split("-")[1])-1, Number.parseInt(dateEnd.split("-")[0]));
+
+
+
+
+    trainingLogCursor = await trainingLogCollection.find({ userFK : userFound._id, date : { $gte: dateBeginObj, $lt: dateEndObj }});
+
+
+    setLogList = new Array();
+
+    while( await trainingLogCursor.hasNext() == true ){
+      trainingLogFound = await trainingLogCursor.next();
+      
+      
+      setLogCursor = setLogCollection.find({ trainingLogFK : trainingLogFound._id });
+
+      while(await setLogCursor.hasNext() == true){
+        setLogFound = await setLogCursor.next();
+
+        console.log({setLogFound});
+
+        exerciseSetFound = await exerciseSetCollection.findOne({ _id : setLogFound.setFK });
+        
+        if(exerciseSetFound != null){
+          exerciseDayFound = await exerciseDayCollection.findOne({ _id : exerciseSetFound.exerciseDayFk });
+
+          if(exerciseDayFound != null){
+
+            if (exerciseDayFound.exerciseFk.toString() == exerciseId){
+              setResponse = setLogFound;
+              date = trainingLogFound.date;
+              setResponse.trainingLogFK = {date};
+              setLogList.push(setResponse);
+            }
+          }
+
+        }
+
+      }
+
+
+    }
+
+    console.log({setLogList});
+
+    res.status(200).json(setLogList);
+
+  }
+
+
+
+  getAnalytics().catch(err => {
+    console.log("cant get analytics: "+err);
+    res.status(500).json({message : "something went wrong"});
+  });
+
+
+});
 
 
 
