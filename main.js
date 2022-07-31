@@ -1261,6 +1261,77 @@ app.get("/getAnalytics", authenticateJWT, (req, res) => {
 });
 
 
+app.get("/getTrainingsByUser", authenticateJWT, (req, res) => {
+
+  async function getTrainingByUser(){
+
+    const user = req.query.user;
+
+    userFound = await userCollection.findOne({ User: user });
+
+    console.log(user);
+    console.log(userFound)
+
+    trainingFoundList = new Array();
+
+    trainingsOfUserCursor = await trainingOfUserCollection.find({ user: userFound._id});
+
+    while(await trainingsOfUserCursor.hasNext() == true){
+      trainingOfUserFound = await trainingsOfUserCursor.next();
+
+      trainingFound = await trainingCollection.findOne({ _id : trainingOfUserFound.training });
+
+      if(trainingFound != null){
+        trainingFoundList.push(trainingFound);
+      }
+    }
+
+    res.status(200).json(trainingFoundList);
+
+
+
+  }
+
+
+  getTrainingByUser().catch(err => {
+    console.log("can't get trainings of user: "+err);
+    res.status(500).json({message: "something went wrong"});
+  });
+});
+
+
+
+app.post("/deleteTraining", authenticateJWT, (req, res) => {
+
+  async function deleteTraining(){
+
+
+    const {trainingId, user} = req.body;
+
+    console.log(trainingId);
+    console.log(user);
+
+    userFound = await userCollection.findOne({ User : user });
+
+    
+    await trainingOfUserCollection.updateOne({ training: new ObjectId(trainingId), user : userFound._id }, {
+      $set: {
+        isActive : "false"
+      }
+    });
+
+    res.status(200).json({message : "correctly deleted"});
+
+  }
+
+
+  deleteTraining().catch(err => {
+    console.log("error deleting training "+err);
+    res.status(500).json({message : "something went wrong"});
+  });
+});
+
+
 
 app.listen(3000, function () {
   console.log('listening on '+port)
