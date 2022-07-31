@@ -1336,3 +1336,6 @@ app.post("/deleteTraining", authenticateJWT, (req, res) => {
 app.listen(3000, function () {
   console.log('listening on '+port)
 });
+
+//export instance to vercel build
+module.exports = app;
