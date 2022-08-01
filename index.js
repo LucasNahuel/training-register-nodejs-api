@@ -1,4 +1,4 @@
-const { MongoClient, ObjectId } = require("mongodb");
+const { MongoClient, ObjectId } = require('mongodb');
 const username = encodeURIComponent("lucas");
 const password = encodeURIComponent("can_317");
 const clusterUrl = "cluster0.ypdud.mongodb.net";
