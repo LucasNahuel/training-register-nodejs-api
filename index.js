@@ -40,7 +40,7 @@ const uri =
 // Create a new MongoClient
 const client = new MongoClient(uri);
 
-client.connect( (err, client) =>{
+connectionObj = client.connect( (err, client) =>{
   if (err) return console.error(err)
   console.log('Connected to Database')
   db = client.db('training-db')
@@ -56,6 +56,7 @@ client.connect( (err, client) =>{
   trainingRatingCollection = db.collection('trainingRating');
 
 
+});
 
 const express = require('express');
 const app = express();
@@ -1354,9 +1355,5 @@ app.listen(3000, function () {
   console.log('listening on '+port)
 });
 
-
-
 //export instance to vercel build
 module.exports = app;
-
-});
