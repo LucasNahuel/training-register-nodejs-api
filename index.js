@@ -54,7 +54,7 @@ client.connect( (err, client) =>{
   trainingLogCollection = db.collection('trainingLog');
   setLogCollection = db.collection('setLog');
   trainingRatingCollection = db.collection('trainingRating');
-});
+
 
 
 const express = require('express');
@@ -1348,9 +1348,15 @@ app.post("/deleteTraining", authenticateJWT, (req, res) => {
 
 
 
+
+
 app.listen(3000, function () {
   console.log('listening on '+port)
 });
 
+
+
 //export instance to vercel build
 module.exports = app;
+
+});
