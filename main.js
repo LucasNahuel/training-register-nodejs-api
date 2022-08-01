@@ -63,38 +63,10 @@ const port = 3000;
 
 
 app.use(bodyParser());
-app.use(cors({
-  origin: 'http://localhost:4200'
-}));
+app.use(cors());
 
 
 
-
-const allowCors = fn => async (req, res) => {
-  res.setHeader('Access-Control-Allow-Credentials', true)
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  // another common pattern
-  // res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT')
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  )
-  if (req.method === 'OPTIONS') {
-    res.status(200).end()
-    return
-  }
-  return await fn(req, res)
-}
-
-const handler = (req, res) => {
-  const d = new Date()
-  res.end(d.toString())
-}
-
-module.exports = allowCors(handler);
-
-app.use(allowCors);
 
 
 app.get('/', (req, res) => {
@@ -114,6 +86,8 @@ app.post('/register', (req, resPost) => {
 app.post('/login', (req, resPost) => {
 
   const { user, password } = req.body;
+
+  console.log("targeted");
 
 
   userCollection.findOne({ User: user }).then(
@@ -142,7 +116,9 @@ app.post('/login', (req, resPost) => {
 
 
 
-  );
+  ).catch(err => {
+    console.log("error login : "+err);
+  });
 
 
   
@@ -1369,4 +1345,3 @@ app.listen(3000, function () {
 });
 
 //export instance to vercel build
-module.exports = app;
