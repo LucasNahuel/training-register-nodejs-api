@@ -132,8 +132,12 @@ app.get("/getUserByName/:userName", (req, resGet) =>{
 
     let userFound = null;
 
+    db = client.db('training-db');
+    userCollection = db.collection('user');
+
 
     userFound = await userCollection.findOne({ User : req.params.userName });
+
 
     resGet.status(200).json(userFound);
 
