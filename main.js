@@ -63,6 +63,9 @@ const port = 3000;
 
 
 app.use(bodyParser());
+app.use(cors({
+  origin: '*'
+}));
 
 
 
@@ -89,7 +92,7 @@ const handler = (req, res) => {
   res.end(d.toString())
 }
 
-module.exports = allowCors(handler)
+module.exports = allowCors(handler);
 
 
 app.get('/', (req, res) => {
