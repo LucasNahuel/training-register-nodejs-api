@@ -12,6 +12,7 @@
     "nodemon": "^2.0.18"
   },
   "scripts": {
+    "start": "node main.js",
     "dev": "nodemon main.js"
   }
 
