@@ -1345,3 +1345,4 @@ app.listen(3000, function () {
 });
 
 //export instance to vercel build
+module.exports = app;
