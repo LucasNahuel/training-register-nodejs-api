@@ -55,7 +55,7 @@ connectionObj = client.connect( (err, client) =>{
   setLogCollection = db.collection('setLog');
   trainingRatingCollection = db.collection('trainingRating');
 
-  
+});
 
 
 
@@ -1367,4 +1367,3 @@ app.listen(3000, function () {
 module.exports = app;
 
 
-});
