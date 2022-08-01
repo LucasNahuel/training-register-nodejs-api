@@ -128,18 +128,22 @@ app.post('/login', (req, resPost) => {
 
 app.get("/getUserByName/:userName", (req, resGet) =>{
 
-  let user = null;
+  async function getUserByName(){
 
-  console.log(req.params);
+    let userFound = null;
 
-  userCollection.findOne({ User : req.params.userName }).then( res => {
 
-    user = res;
+    userFound = await userCollection.findOne({ User : req.params.userName });
 
-    resGet.status(200).send(user);
+    resGet.status(200).json(userFound);
 
+  }
+
+  
+  getUserByName().catch(err =>{
+    console.log("cant get user by name : "+err);
+    resGet.status(500).json({message : "something went wrong"});
   })
-
   
 
 });
