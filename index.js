@@ -40,6 +40,24 @@ const uri =
 // Create a new MongoClient
 const client = new MongoClient(uri);
 
+connectionObj = client.connect( (err, client) =>{
+  if (err) return console.error(err)
+  console.log('Connected to Database')
+  db = client.db('training-db')
+  userCollection = db.collection('user')
+  trainingOfUserCollection = db.collection('trainingOfUsers');
+  trainingCollection = db.collection('training');
+  exerciseCollection = db.collection('exercise');
+  trainingDayCollection = db.collection('trainingDay');
+  exerciseDayCollection = db.collection('exerciseDay');
+  exerciseSetCollection = db.collection('exerciseSet');
+  trainingLogCollection = db.collection('trainingLog');
+  setLogCollection = db.collection('setLog');
+  trainingRatingCollection = db.collection('trainingRating');
+
+  
+
+
 
 
 
@@ -118,6 +136,8 @@ app.get("/getUserByName/:userName", (req, resGet) =>{
   async function getUserByName(){
 
     let userFound = null;
+
+    if(MongoClient.is)
 
     db = client.db('training-db');
     userCollection = db.collection('user');
@@ -1333,24 +1353,7 @@ app.post("/deleteTraining", authenticateJWT, (req, res) => {
   });
 });
 
-connectionObj = client.connect( (err, client) =>{
-  if (err) return console.error(err)
-  console.log('Connected to Database')
-  db = client.db('training-db')
-  userCollection = db.collection('user')
-  trainingOfUserCollection = db.collection('trainingOfUsers');
-  trainingCollection = db.collection('training');
-  exerciseCollection = db.collection('exercise');
-  trainingDayCollection = db.collection('trainingDay');
-  exerciseDayCollection = db.collection('exerciseDay');
-  exerciseSetCollection = db.collection('exerciseSet');
-  trainingLogCollection = db.collection('trainingLog');
-  setLogCollection = db.collection('setLog');
-  trainingRatingCollection = db.collection('trainingRating');
 
-  
-
-});
 
 
 
@@ -1362,3 +1365,6 @@ app.listen(3000, function () {
 
 //export instance to vercel build
 module.exports = app;
+
+
+});
