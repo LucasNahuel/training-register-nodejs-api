@@ -64,7 +64,7 @@ const port = 3000;
 
 app.use(bodyParser());
 app.use(cors({
-  origin: '*'
+  origin: 'http://localhost:4200'
 }));
 
 
@@ -93,6 +93,8 @@ const handler = (req, res) => {
 }
 
 module.exports = allowCors(handler);
+
+app.use(allowCors);
 
 
 app.get('/', (req, res) => {
