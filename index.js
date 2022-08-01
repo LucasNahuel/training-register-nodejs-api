@@ -40,26 +40,9 @@ const uri =
 // Create a new MongoClient
 const client = new MongoClient(uri);
 
-connectionObj = client.connect( (err, client) =>{
-  if (err) return console.error(err)
-  console.log('Connected to Database')
-  db = client.db('training-db')
-  userCollection = db.collection('user')
-  trainingOfUserCollection = db.collection('trainingOfUsers');
-  trainingCollection = db.collection('training');
-  exerciseCollection = db.collection('exercise');
-  trainingDayCollection = db.collection('trainingDay');
-  exerciseDayCollection = db.collection('exerciseDay');
-  exerciseSetCollection = db.collection('exerciseSet');
-  trainingLogCollection = db.collection('trainingLog');
-  setLogCollection = db.collection('setLog');
-  trainingRatingCollection = db.collection('trainingRating');
 
-  app.listen(3000, function () {
-    console.log('listening on '+port)
-  });
-  
-});
+
+
 
 const express = require('express');
 const app = express();
@@ -1348,6 +1331,27 @@ app.post("/deleteTraining", authenticateJWT, (req, res) => {
     console.log("error deleting training "+err);
     res.status(500).json({message : "something went wrong"});
   });
+});
+
+connectionObj = client.connect( (err, client) =>{
+  if (err) return console.error(err)
+  console.log('Connected to Database')
+  db = client.db('training-db')
+  userCollection = db.collection('user')
+  trainingOfUserCollection = db.collection('trainingOfUsers');
+  trainingCollection = db.collection('training');
+  exerciseCollection = db.collection('exercise');
+  trainingDayCollection = db.collection('trainingDay');
+  exerciseDayCollection = db.collection('exerciseDay');
+  exerciseSetCollection = db.collection('exerciseSet');
+  trainingLogCollection = db.collection('trainingLog');
+  setLogCollection = db.collection('setLog');
+  trainingRatingCollection = db.collection('trainingRating');
+
+  app.listen(3000, function () {
+    console.log('listening on '+port)
+  });
+
 });
 
 
