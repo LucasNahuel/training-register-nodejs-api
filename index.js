@@ -100,8 +100,13 @@ app.post('/login', (req, resPost) => {
 
   console.log("targeted");
 
+  db = client.db('training-db');
+  
+  userCollection = db.collection('user');
+  
 
-  userCollection.findOne({ User: user }).then(
+
+  userCollection.findOne({ User: new RegExp(user, "i") }).then(
 
     userRes => {
 
@@ -816,7 +821,7 @@ app.get("/getTrainingsByName", authenticateJWT,  (req, res) =>{
 
 
   
-    trainingCursor = trainingCollection.find({ name : new RegExp('.*' + name + '.*') }).skip(20 * page).limit(20);
+    trainingCursor = trainingCollection.find({ name : new RegExp('.*' + name + '.*', "i") }).skip(20 * page).limit(20);
   
     while(await trainingCursor.hasNext() == true){
 
