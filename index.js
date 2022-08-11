@@ -81,11 +81,14 @@ connectionObj = client.connect( (err, client) =>{
 
 
 app.get('/', (req, res) => {
-  res.send("Hello world!")
+  res.send("training-register api works!")
 });
 
 
 app.post('/register', (req, resPost) => {
+
+  db = client.db('training-db');
+
   userCollection.insertOne(req.body)
       .then(res => {
           resPost.end("{\"value\":\"Changes saved\"}");
@@ -146,6 +149,8 @@ app.get("/getUserByName/:userName", (req, resGet) =>{
 
   async function getUserByName(){
 
+    db = client.db('training-db');
+
     let userFound = null;
 
     db = client.db('training-db');
@@ -205,6 +210,8 @@ const authenticateJWT = (req, res, next) => {
 app.get("/getTraining", authenticateJWT, (req, res) => {
 
   async function getTrainingFunction() {
+
+    db = client.db('training-db');
 
     const user  = req.query.user;
 
@@ -404,6 +411,8 @@ app.post("/createTraining", authenticateJWT, (req, resPost) =>{
 
   async function handler(){
 
+    db = client.db('training-db');
+
   const {userCreatorName, trainingName} = req.body;
   const JSONexerciceList = JSON.parse(req.body.JSONexerciceList);
 
@@ -591,6 +600,8 @@ app.post("/saveSet", authenticateJWT, (req, res) => {
 
   async function saveSet(){
 
+    db = client.db('training-db');
+
     const {user, setFk, date, reps, weight} = req.body;
 
     //find the user document
@@ -681,6 +692,8 @@ app.post("/saveSet", authenticateJWT, (req, res) => {
 app.get("/getTrainingsById", authenticateJWT, (req, res) => {
 
   async function getTrainingById(){
+
+    db = client.db('training-db');
 
     const trainingId = req.query.id;
 
@@ -796,6 +809,8 @@ app.get("/getTrainingsByName", authenticateJWT,  (req, res) =>{
 
   async function getTrainingByName(){
 
+    db = client.db('training-db');
+
     const name = req.query.name;
 
     const page = req.query.page;
@@ -898,6 +913,8 @@ app.post("/rateTraining", authenticateJWT, (req, res) => {
 
   async function rateTraining(){
 
+    db = client.db('training-db');
+
 
     const { trainingFK, userName, rate, comment} = req.body;
 
@@ -950,6 +967,8 @@ app.get("/getRatingByUserAndTraining", authenticateJWT, (req, res) => {
 
   async function getRatingByUserAndTraining(){
 
+    db = client.db('training-db');
+
     const { userName, trainingFK } = req.query;
 
     console.log(trainingFK);
@@ -975,6 +994,8 @@ app.get("/getRatingsPage", authenticateJWT, (req, res) => {
 
 
   async function getRatingPage(){
+
+    db = client.db('training-db');
 
     const { trainingFK, pageNo } = req.query;
 
@@ -1032,6 +1053,8 @@ app.get("/isUsernameTaken", authenticateJWT, (req, res) => {
 
   async function isUserNameTaken(){
 
+    db = client.db('training-db');
+
     const { userName, id} = req.query;
 
     isTaken = null;
@@ -1062,6 +1085,8 @@ app.post("/updateUser", authenticateJWT, (req, res) => {
 
   async function updateUser(){
 
+    db = client.db('training-db');
+
   //implement update user method
 
   const { id, userName, password, email } = req.body;
@@ -1090,6 +1115,8 @@ app.post("/updateUser", authenticateJWT, (req, res) => {
 app.post("/setTrainingActive", authenticateJWT, (req, res) => {
 
   async function setTrainingActive(){
+
+    db = client.db('training-db');
 
 
     const { id , user } = req.body;
@@ -1152,6 +1179,8 @@ app.post("/setTrainingActive", authenticateJWT, (req, res) => {
 app.get("/getTrainingAndExercices", authenticateJWT, (req, res) => {
 
   async function getTrainingAndExercises(){
+
+    db = client.db('training-db');
 
     const user = req.query.user;
 
@@ -1226,6 +1255,8 @@ app.get("/getAnalytics", authenticateJWT, (req, res) => {
 
   async function getAnalytics(){
 
+    db = client.db('training-db');
+
     const { user, exerciseId, dateBegin, dateEnd } = req.query;
 
     userFound = await userCollection.findOne({ User: user});
@@ -1296,6 +1327,8 @@ app.get("/getTrainingsByUser", authenticateJWT, (req, res) => {
 
   async function getTrainingByUser(){
 
+    db = client.db('training-db');
+
     const user = req.query.user;
 
     userFound = await userCollection.findOne({ User: user });
@@ -1335,6 +1368,8 @@ app.get("/getTrainingsByUser", authenticateJWT, (req, res) => {
 app.post("/deleteTraining", authenticateJWT, (req, res) => {
 
   async function deleteTraining(){
+
+    db = client.db('training-db');
 
 
     const {trainingId, user} = req.body;
